@@ -1,49 +1,48 @@
-import random
 import torch
 import numpy as np
 
-from collections import deque
 
-
+# code based on https://github.com/XinJingHao/DDPG-Pytorch?tab=readme-ov-file
 class ReplayBuffer:
-    
-    def __init__(self, buffer_len=5000):
-        self.store = {
-            'states' : deque(maxlen=buffer_len),
-            'actions' : deque(maxlen=buffer_len),
-            'rewards' : deque(maxlen=buffer_len),
-            'next_states' : deque(maxlen=buffer_len),
-            'dones' : deque(maxlen=buffer_len)
-        }
-    
+    def __init__(self, state_dim, action_dim, buffer_len, device='cpu'):
+        self.capacity = buffer_len
+        self.device = device
+        self.pointer = 0
+        self.size = 0
+
+        self.states = torch.zeros((self.capacity, state_dim) ,dtype=torch.float,device=self.device)
+        self.actions = torch.zeros((self.capacity, action_dim) ,dtype=torch.float,device=self.device)
+        self.rewards = torch.zeros((self.capacity, 1) ,dtype=torch.float,device=self.device)
+        self.next_states = torch.zeros((self.capacity, state_dim) ,dtype=torch.float,device=self.device)
+        self.dones = torch.zeros((self.capacity, 1) ,dtype=torch.bool,device=self.device)
+
     def update(
         self, 
         state, 
         action, 
         reward, 
-        next_state,
+        next_state, 
         done
     ):
-        self.store['states'].append(state)
-        self.store['actions'].append(action)
-        self.store['rewards'].append(reward)
-        self.store['next_states'].append(next_state)
-        self.store['dones'].append(done)
-    
-    def sample(self, buffer_size, device):
-        states = random.choices(self.store['states'], k=buffer_size)
-        actions = random.choices(self.store['actions'], k=buffer_size)
-        rewards = random.choices(self.store['rewards'], k=buffer_size)
-        next_states = random.choices(self.store['next_states'], k=buffer_size)
-        dones = random.choices(self.store['dones'], k=buffer_size)
-        
+
+        self.states[self.pointer] = torch.as_tensor(state).to(self.device)
+        self.actions[self.pointer] = torch.as_tensor(action).to(self.device) 
+        self.rewards[self.pointer] = reward
+        self.next_states[self.pointer] = torch.as_tensor(next_state).to(self.device)
+        self.dones[self.pointer] = done
+
+        self.pointer = (self.pointer + 1) % self.capacity 
+        self.size = min(self.size + 1, self.capacity)
+
+    def sample(self, batch_size):
+        ind = torch.randint(0, self.size, device=self.device, size=(batch_size,))
         return (
-            torch.as_tensor(np.array(states), dtype=torch.float32, device=device),
-            torch.as_tensor(np.array(actions), dtype=torch.float32, device=device),
-            torch.as_tensor(np.array(rewards), dtype=torch.float32, device=device),
-            torch.as_tensor(np.array(next_states), dtype=torch.float32, device=device),
-            torch.as_tensor(np.array(dones), dtype=torch.bool, device=device)
+            self.states[ind], 
+            self.actions[ind], 
+            self.rewards[ind], 
+            self.next_states[ind], 
+            self.dones[ind]
         )
         
     def __len__(self):
-        return len(self.store['states'])
+        return len(self.states)
