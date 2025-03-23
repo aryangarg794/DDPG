@@ -22,6 +22,7 @@ uv pip sync
 :-------------------------:|:-------------------------:
 ![Inverted Pendulum LC](media/inv.png)  | ![Video Inv](media/inv_penmd.gif) 
 
+-----------------------
+#### Reference Paper
 
-Reference Paper
 [1] Lillicrap, T. P., Hunt, J. J., Pritzel, A., Heess, N., Erez, T., Tassa, Y., Silver, D., & Wierstra, D. (2016). Continuous Control with Deep Reinforcement Learning. International Conference on Learning Representations (ICLR) 2016. 
